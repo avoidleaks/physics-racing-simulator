@@ -1,0 +1,615 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Physics Racing Simulator</title>
+    <style>
+        body {
+            margin: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            background: #1a1a2e;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            color: #fff;
+        }
+        .container {
+            background: #16213e;
+            padding: 20px;
+            border-radius: 15px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 15px;
+            width: 90%;
+            max-width: 850px;
+        }
+        canvas {
+            background: #2d3436;
+            border-radius: 10px;
+            box-shadow: inset 0 0 10px rgba(0,0,0,0.5);
+            width: 100%;
+            max-width: 800px;
+            height: auto;
+            border: 2px solid #00cec9;
+        }
+        .controls {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+            justify-content: center;
+            width: 100%;
+            max-width: 800px;
+        }
+        .control-group {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+            min-width: 180px;
+            background: #0f3460;
+            padding: 10px 15px;
+            border-radius: 8px;
+        }
+        label {
+            font-weight: bold;
+            color: #dfe6e9;
+            font-size: 14px;
+        }
+        input[type="range"] {
+            width: 100%;
+            cursor: pointer;
+            background: transparent;
+        }
+        .value-display {
+            color: #fdcb6e;
+            font-weight: bold;
+            text-align: center;
+            font-size: 18px;
+        }
+        .buttons {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+        button {
+            padding: 10px 20px;
+            font-size: 16px;
+            font-weight: bold;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: all 0.3s;
+            background: #00b894;
+            color: white;
+            letter-spacing: 1px;
+        }
+        button:hover {
+            background: #00a381;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+        }
+        button.reset {
+            background: #e17055;
+        }
+        button.reset:hover {
+            background: #d63031;
+        }
+        .status {
+            font-size: 18px;
+            font-weight: bold;
+            margin-top: 10px;
+            text-align: center;
+            color: #fdcb6e;
+            min-height: 30px;
+        }
+        .info {
+            color: #b2bec3;
+            font-size: 14px;
+            text-align: center;
+            max-width: 800px;
+        }
+        .language-select {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            background: #0f3460;
+            padding: 8px 15px;
+            border-radius: 8px;
+        }
+        .language-select select {
+            padding: 5px 10px;
+            border-radius: 5px;
+            border: 1px solid #00cec9;
+            background: #2d3436;
+            color: white;
+            font-weight: bold;
+        }
+        .keybinds-box {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            flex-wrap: wrap;
+            background: #0f3460;
+            padding: 10px 15px;
+            border-radius: 8px;
+            border: 1px solid #00cec9;
+            width: 100%;
+            max-width: 800px;
+            box-sizing: border-box;
+        }
+        .keybind-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 13px;
+            color: #dfe6e9;
+        }
+        kbd {
+            background: #2d3436;
+            border: 1px solid #00cec9;
+            border-radius: 4px;
+            padding: 2px 6px;
+            font-family: monospace;
+            font-weight: bold;
+            color: #fdcb6e;
+            box-shadow: 0 2px 0 rgba(0,0,0,0.3);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h2 id="pageTitle">🏎️ Physics Racing Simulator</h2>
+        <div class="language-select">
+            <label for="langSelect">🌐 Language / ენა:</label>
+            <select id="langSelect">
+                <option value="en">English</option>
+                <option value="ka">ქართული</option>
+                <option value="es">Español</option>
+                <option value="fr">Français</option>
+                <option value="de">Deutsch</option>
+                <option value="ru">Русский</option>
+            </select>
+        </div>
+        <p class="info" id="infoText">
+            Control the car by adjusting <strong>acceleration</strong> (throttle/brake) and <strong>friction</strong>.<br>
+            Your goal: stop exactly on the <strong>red stop line</strong>. Avoid overshooting!
+        </p>
+
+        <div class="keybinds-box">
+            <div class="keybind-item"><kbd>W</kbd> / <kbd>▲</kbd> <span id="kbGas">+0.4 Accel</span></div>
+            <div class="keybind-item"><kbd>S</kbd> / <kbd>▼</kbd> <span id="kbBrake">-0.4 Accel</span></div>
+            <div class="keybind-item"><kbd>A</kbd> / <kbd>◄</kbd> <span id="kbFricDec">-0.05 Friction</span></div>
+            <div class="keybind-item"><kbd>D</kbd> / <kbd>►</kbd> <span id="kbFricInc">+0.05 Friction</span></div>
+            <div class="keybind-item"><kbd>Space</kbd> <span id="kbHandbrake">Handbrake</span></div>
+            <div class="keybind-item"><kbd>R</kbd> <span id="kbReset">Reset</span></div>
+        </div>
+
+        <canvas id="trackCanvas" width="800" height="200"></canvas>
+        <div class="controls">
+            <div class="control-group">
+                <label for="accelSlider" id="accelLabel">Acceleration (m/s²)</label>
+                <input type="range" id="accelSlider" min="-5" max="5" step="0.1" value="0">
+                <span class="value-display" id="accelValue">0.0</span>
+            </div>
+            <div class="control-group">
+                <label for="frictionSlider" id="frictionLabel">Friction coefficient</label>
+                <input type="range" id="frictionSlider" min="0" max="1" step="0.01" value="0.1">
+                <span class="value-display" id="frictionValue">0.10</span>
+            </div>
+            <div class="control-group">
+                <label id="velocityLabel">Current Velocity (m/s)</label>
+                <span class="value-display" id="velocityDisplay">0.00</span>
+            </div>
+        </div>
+        <div class="buttons">
+            <button id="startBtn">▶ Start / Resume</button>
+            <button id="pauseBtn">⏸ Pause</button>
+            <button id="resetBtn" class="reset">↺ Reset</button>
+        </div>
+        <div class="status" id="statusMessage">Ready. Set your parameters and press Start.</div>
+    </div>
+
+    <script>
+        (function() {
+            const translations = {
+                en: {
+                    pageTitle: "🏎️ Physics Racing Simulator",
+                    infoText: "Control the car by adjusting <strong>acceleration</strong> (throttle/brake) and <strong>friction</strong>.<br>Your goal: stop exactly on the <strong>red stop line</strong>. Avoid overshooting!",
+                    accelLabel: "Acceleration (m/s²)",
+                    frictionLabel: "Friction coefficient",
+                    velocityLabel: "Current Velocity (m/s)",
+                    startBtn: "▶ Start / Resume",
+                    pauseBtn: "⏸ Pause",
+                    resetBtn: "↺ Reset",
+                    ready: "Ready. Set your parameters and press Start.",
+                    running: "Simulation running...",
+                    paused: "Paused. Press Start to resume.",
+                    resumed: "Resumed.",
+                    perfect: "🎯 Perfect stop! Error: {error} m",
+                    stoppedEarly: "⚠️ Stopped early! Result: {error} m",
+                    overshot: "💥 Stopped late! Result: +{error} m",
+                    startLabel: "START",
+                    stopLabel: "STOP",
+                    velocityUnit: "m/s",
+                    kbGas: "+0.4 Accel",
+                    kbBrake: "-0.4 Accel",
+                    kbFricDec: "-0.05 Friction",
+                    kbFricInc: "+0.05 Friction",
+                    kbHandbrake: "Handbrake",
+                    kbReset: "Reset"
+                },
+                ka: {
+                    pageTitle: "🏎️ ფიზიკის სარბოლო სიმულატორი",
+                    infoText: "მართეთ მანქანა <strong>აჩქარების</strong> (გაზი/მუხრუჭი) და <strong>ხახუნის</strong> რეგულირებით.<br>მიზანი: გაჩერდით ზუსტად <strong>წითელ გაჩერების ხაზზე</strong>. მოერიდეთ გადაცილებას!",
+                    accelLabel: "აჩქარება (მ/წმ²)",
+                    frictionLabel: "ხახუნის კოეფიციენტი",
+                    velocityLabel: "მიმდინარე სიჩქარე (მ/წმ)",
+                    startBtn: "▶ დაწყება / გაგრძელება",
+                    pauseBtn: "⏸ პაუზა",
+                    resetBtn: "↺ გადატვირთვა",
+                    ready: "მზადაა. დააყენეთ პარამეტრები და დააჭირეთ დაწყებას.",
+                    running: "სიმულაცია მიმდინარეობს...",
+                    paused: "პაუზა. გასაგრძელებლად დააჭირეთ დაწყებას.",
+                    resumed: "გაგრძელდა.",
+                    perfect: "🎯 ზუსტი გაჩერება! ცდომილება: {error} მ",
+                    stoppedEarly: "⚠️ ადრე გაჩერდით! შედეგი: {error} მ",
+                    overshot: "💥 გვიან გაჩერდით! შედეგი: +{error} მ",
+                    startLabel: "დაწყება",
+                    stopLabel: "გაჩერება",
+                    velocityUnit: "მ/წმ",
+                    kbGas: "+0.4 აჩქარება",
+                    kbBrake: "-0.4 აჩქარება",
+                    kbFricDec: "-0.05 ხახუნი",
+                    kbFricInc: "+0.05 ხახუნი",
+                    kbHandbrake: "ხელის მუხრუჭი",
+                    kbReset: "გადატვირთვა"
+                }
+            };
+
+            const canvas = document.getElementById('trackCanvas');
+            const ctx = canvas.getContext('2d');
+            const W = canvas.width;
+            const H = canvas.height;
+
+            const startX = 50;
+            const stopLineX = W - 100;
+            const carWidth = 30;
+            const carHeight = 20;
+            const carY = H / 2 - carHeight / 2;
+
+            let carX = startX;
+            let cameraOffsetX = 0;
+            let velocity = 0;
+            let acceleration = 0;
+            let frictionCoeff = 0.1;
+            let isRunning = false;
+            let isPaused = false;
+            let animationId = null;
+            let lastTimestamp = 0;
+            let distanceError = 0;
+            let simulationEnded = false;
+            let hasMoved = false;
+
+            const keys = {};
+
+            let currentLang = 'en';
+            let currentStatusKey = 'ready';
+            let currentStatusParams = {};
+
+            const accelSlider = document.getElementById('accelSlider');
+            const frictionSlider = document.getElementById('frictionSlider');
+            const accelValue = document.getElementById('accelValue');
+            const frictionValue = document.getElementById('frictionValue');
+            const velocityDisplay = document.getElementById('velocityDisplay');
+            const statusMessage = document.getElementById('statusMessage');
+            const startBtn = document.getElementById('startBtn');
+            const pauseBtn = document.getElementById('pauseBtn');
+            const resetBtn = document.getElementById('resetBtn');
+            const langSelect = document.getElementById('langSelect');
+
+            function t(key) {
+                return (translations[currentLang] && translations[currentLang][key]) || translations.en[key] || key;
+            }
+
+            function applyLanguage(lang) {
+                currentLang = lang;
+                document.getElementById('pageTitle').innerHTML = t('pageTitle');
+                document.getElementById('infoText').innerHTML = t('infoText');
+                document.getElementById('accelLabel').textContent = t('accelLabel');
+                document.getElementById('frictionLabel').textContent = t('frictionLabel');
+                document.getElementById('velocityLabel').textContent = t('velocityLabel');
+                document.getElementById('kbGas').textContent = t('kbGas');
+                document.getElementById('kbBrake').textContent = t('kbBrake');
+                document.getElementById('kbFricDec').textContent = t('kbFricDec');
+                document.getElementById('kbFricInc').textContent = t('kbFricInc');
+                document.getElementById('kbHandbrake').textContent = t('kbHandbrake');
+                document.getElementById('kbReset').textContent = t('kbReset');
+                startBtn.textContent = t('startBtn');
+                pauseBtn.textContent = t('pauseBtn');
+                resetBtn.textContent = t('resetBtn');
+                updateStatusMessage();
+                drawTrack();
+            }
+
+            function updateStatusMessage() {
+                const template = t(currentStatusKey);
+                let message = template;
+                if (currentStatusParams && typeof currentStatusParams === 'object') {
+                    Object.keys(currentStatusParams).forEach(key => {
+                        message = message.replace(`{${key}}`, currentStatusParams[key]);
+                    });
+                }
+                statusMessage.textContent = message;
+            }
+
+            function setStatus(key, params = {}) {
+                currentStatusKey = key;
+                currentStatusParams = params;
+                updateStatusMessage();
+            }
+
+            function updateSliderDisplays() {
+                accelValue.textContent = parseFloat(accelSlider.value).toFixed(1);
+                frictionValue.textContent = parseFloat(frictionSlider.value).toFixed(2);
+            }
+
+            function resetSimulation() {
+                carX = startX;
+                cameraOffsetX = 0;
+                velocity = 0;
+                acceleration = 0;
+                accelSlider.value = "0.0";
+                frictionCoeff = parseFloat(frictionSlider.value);
+                isRunning = false;
+                isPaused = false;
+                simulationEnded = false;
+                hasMoved = false;
+                distanceError = 0;
+                if (animationId) {
+                    cancelAnimationFrame(animationId);
+                    animationId = null;
+                }
+                updateSliderDisplays();
+                updateVelocityDisplay();
+                setStatus('ready');
+                drawTrack();
+            }
+
+            function startSimulation() {
+                if (simulationEnded) {
+                    resetSimulation();
+                }
+                if (!isRunning) {
+                    isRunning = true;
+                    isPaused = false;
+                    lastTimestamp = performance.now();
+                    animationId = requestAnimationFrame(updateSimulation);
+                    setStatus('running');
+                }
+            }
+
+            function pauseSimulation() {
+                if (isRunning && !isPaused) {
+                    isPaused = true;
+                    if (animationId) {
+                        cancelAnimationFrame(animationId);
+                        animationId = null;
+                    }
+                    setStatus('paused');
+                } else if (isPaused) {
+                    isPaused = false;
+                    lastTimestamp = performance.now();
+                    animationId = requestAnimationFrame(updateSimulation);
+                    setStatus('resumed');
+                }
+            }
+
+            function updateSimulation(timestamp) {
+                if (!isRunning || isPaused || simulationEnded) {
+                    return;
+                }
+
+                const dt = Math.min((timestamp - lastTimestamp) / 1000, 0.05);
+                lastTimestamp = timestamp;
+
+                acceleration = parseFloat(accelSlider.value);
+                frictionCoeff = parseFloat(frictionSlider.value);
+
+                const g = 9.81;
+                let netAccel = acceleration;
+                if (velocity > 0) {
+                    netAccel -= frictionCoeff * g;
+                } else if (velocity < 0) {
+                    netAccel += frictionCoeff * g;
+                }
+
+                const prevVelocity = velocity;
+                velocity += netAccel * dt;
+
+                if (carX > startX + 2) {
+                    hasMoved = true;
+                }
+
+                // Stop evaluation: Trigger when velocity drops back down to 0 after movement
+                if (hasMoved && ((prevVelocity > 0 && velocity <= 0) || (prevVelocity < 0 && velocity >= 0))) {
+                    velocity = 0;
+                    simulationEnded = true;
+                    isRunning = false;
+                    accelSlider.value = "0.0";
+                    updateSliderDisplays();
+
+                    // Negative = stopped early, Positive = overshot
+                    distanceError = carX - stopLineX;
+                    const errorVal = distanceError.toFixed(2);
+
+                    if (Math.abs(distanceError) < 1.0) {
+                        setStatus('perfect', { error: errorVal });
+                    } else if (distanceError < 0) {
+                        setStatus('stoppedEarly', { error: errorVal });
+                    } else {
+                        setStatus('overshot', { error: errorVal });
+                    }
+
+                    if (animationId) {
+                        cancelAnimationFrame(animationId);
+                        animationId = null;
+                    }
+                    updateVelocityDisplay();
+                    drawTrack();
+                    return;
+                }
+
+                carX += velocity * dt;
+
+                if (carX < startX) {
+                    carX = startX;
+                    if (velocity < 0) velocity = 0;
+                }
+
+                const targetCameraX = Math.max(0, carX - W / 3);
+                cameraOffsetX += (targetCameraX - cameraOffsetX) * 0.1;
+
+                updateVelocityDisplay();
+                drawTrack();
+
+                if (isRunning && !isPaused && !simulationEnded) {
+                    animationId = requestAnimationFrame(updateSimulation);
+                }
+            }
+
+            function updateVelocityDisplay() {
+                velocityDisplay.textContent = Math.abs(velocity) < 0.005 ? "0.00" : velocity.toFixed(2);
+            }
+
+            function drawTrack() {
+                ctx.clearRect(0, 0, W, H);
+
+                ctx.save();
+                ctx.translate(-cameraOffsetX, 0);
+
+                ctx.fillStyle = '#636e72';
+                ctx.fillRect(cameraOffsetX, carY - 10, W, carHeight + 20);
+
+                ctx.strokeStyle = '#dfe6e9';
+                ctx.lineWidth = 2;
+                ctx.setLineDash([10, 10]);
+                ctx.beginPath();
+                ctx.moveTo(cameraOffsetX - (cameraOffsetX % 20), carY + carHeight / 2);
+                ctx.lineTo(cameraOffsetX + W + 20, carY + carHeight / 2);
+                ctx.stroke();
+                ctx.setLineDash([]);
+
+                ctx.fillStyle = '#00b894';
+                ctx.fillRect(startX - 2, carY - 20, 4, carHeight + 40);
+                ctx.font = '12px Arial';
+                ctx.fillStyle = '#fff';
+                ctx.fillText(t('startLabel'), startX - 25, carY - 25);
+
+                ctx.fillStyle = '#e74c3c';
+                ctx.fillRect(stopLineX - 2, carY - 20, 4, carHeight + 40);
+                ctx.fillText(t('stopLabel'), stopLineX - 20, carY - 25);
+
+                ctx.fillStyle = '#f39c12';
+                ctx.shadowColor = '#000';
+                ctx.shadowBlur = 10;
+                ctx.fillRect(carX, carY, carWidth, carHeight);
+                ctx.shadowBlur = 0;
+
+                ctx.fillStyle = '#2c3e50';
+                ctx.fillRect(carX - 4, carY - 2, 6, 8);
+                ctx.fillRect(carX - 4, carY + carHeight - 6, 6, 8);
+                ctx.fillRect(carX + carWidth - 2, carY - 2, 6, 8);
+                ctx.fillRect(carX + carWidth - 2, carY + carHeight - 6, 6, 8);
+
+                if (Math.abs(velocity) > 0.01) {
+                    ctx.fillStyle = '#fdcb6e';
+                    ctx.beginPath();
+                    const arrowX = carX + carWidth / 2;
+                    const arrowY = carY - 25;
+                    ctx.moveTo(arrowX, arrowY);
+                    ctx.lineTo(arrowX - 10, arrowY + 5);
+                    ctx.lineTo(arrowX + 10, arrowY + 5);
+                    ctx.closePath();
+                    ctx.fill();
+                    ctx.fillStyle = '#fff';
+                    ctx.font = 'bold 12px Arial';
+                    ctx.fillText(velocity.toFixed(1) + ' ' + t('velocityUnit'), arrowX - 15, arrowY - 5);
+                }
+
+                ctx.restore();
+            }
+
+            function triggerKeyAction(code) {
+                if (simulationEnded && (code === 'KeyW' || code === 'ArrowUp' || code === 'KeyS' || code === 'ArrowDown')) {
+                    resetSimulation();
+                }
+
+                let accelVal = parseFloat(accelSlider.value);
+                let fricVal = parseFloat(frictionSlider.value);
+
+                if (code === 'KeyW' || code === 'ArrowUp') {
+                    accelVal = Math.min(5.0, accelVal + 0.4);
+                    accelSlider.value = accelVal.toFixed(1);
+                    updateSliderDisplays();
+                    if (!isRunning) startSimulation();
+                } else if (code === 'KeyS' || code === 'ArrowDown') {
+                    accelVal = Math.max(-5.0, accelVal - 0.4);
+                    accelSlider.value = accelVal.toFixed(1);
+                    updateSliderDisplays();
+                    if (!isRunning) startSimulation();
+                } else if (code === 'KeyA' || code === 'ArrowLeft') {
+                    fricVal = Math.max(0.00, fricVal - 0.05);
+                    frictionSlider.value = fricVal.toFixed(2);
+                    updateSliderDisplays();
+                } else if (code === 'KeyD' || code === 'ArrowRight') {
+                    fricVal = Math.min(1.00, fricVal + 0.05);
+                    frictionSlider.value = fricVal.toFixed(2);
+                    updateSliderDisplays();
+                } else if (code === 'Space') {
+                    accelSlider.value = "0.0";
+                    updateSliderDisplays();
+                } else if (code === 'KeyR') {
+                    resetSimulation();
+                }
+            }
+
+            accelSlider.addEventListener('input', updateSliderDisplays);
+            frictionSlider.addEventListener('input', updateSliderDisplays);
+
+            startBtn.addEventListener('click', startSimulation);
+            pauseBtn.addEventListener('click', pauseSimulation);
+            resetBtn.addEventListener('click', resetSimulation);
+
+            langSelect.addEventListener('change', (e) => applyLanguage(e.target.value));
+
+            window.addEventListener('keydown', (e) => {
+                if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Space'].includes(e.code)) {
+                    e.preventDefault();
+                }
+                if (!keys[e.code]) {
+                    keys[e.code] = true;
+                    triggerKeyAction(e.code);
+                }
+            });
+
+            window.addEventListener('keyup', (e) => {
+                keys[e.code] = false;
+            });
+
+            function init() {
+                updateSliderDisplays();
+                applyLanguage('en');
+                drawTrack();
+                setStatus('ready');
+            }
+
+            init();
+        })();
+    </script>
+</body>
+</html>
